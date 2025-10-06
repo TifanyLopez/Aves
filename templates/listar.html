@@ -1,0 +1,126 @@
+{% extends 'baseadmin.html' %}
+
+{% block title %}Lista de Usuarios{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+
+    <h3 class="text-center mb-4">Lista de Usuarios</h3>
+
+    <div class="d-flex justify-content-end mb-3">
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAgregar">
+            <i class="fa-solid fa-user-plus"></i> Agregar Usuario
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
+            <thead class="table-success text-center">
+                <tr>
+                    <th>ID</th>
+                    <th>Usuario</th>
+                    <th>Correo</th>
+                    <th>Rol</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for usuario in usuarios %}
+                <tr>
+                    <td class="text-center">{{ usuario.id }}</td>
+                    <td>{{ usuario.nombre }}</td>
+                    <td>{{ usuario.correo }}</td>
+                    <td class="text-center">{{ usuario.rol }}</td>
+                    <td class="text-center">
+                        <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#modalEditar{{ usuario.id }}">
+                            <i class="fa-solid fa-pen-to-square"></i> Editar
+                        </button>
+
+                        <a href="{{ url_for('eliminar_usuario', id=usuario.id) }}" class="btn btn-danger btn-sm"
+                           onclick="return confirm('¿Seguro que deseas eliminar este usuario?')">
+                            <i class="fa-solid fa-trash"></i> Eliminar
+                        </a>
+                    </td>
+                </tr>
+
+                <!-- Modal Editar -->
+                <div class="modal fade" id="modalEditar{{ usuario.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form action="{{ url_for('editar_usuario', id=usuario.id) }}" method="POST">
+                                <div class="modal-header bg-warning">
+                                    <h5 class="modal-title text-dark">Editar Usuario</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Nombre</label>
+                                        <input type="text" name="nombre" class="form-control" value="{{ usuario.nombre }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Correo</label>
+                                        <input type="email" name="correo" class="form-control" value="{{ usuario.correo }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Rol</label>
+                                        <select name="rol" class="form-select" required>
+                                            <option value="Admin" {% if usuario.rol == 'Admin' %}selected{% endif %}>Admin</option>
+                                            <option value="Usuario" {% if usuario.rol == 'Usuario' %}selected{% endif %}>Usuario</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="submit" class="btn btn-warning">Guardar Cambios</button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal Agregar -->
+    <div class="modal fade" id="modalAgregar" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="{{ url_for('agregar_usuario') }}" method="POST">
+                    <div class="modal-header bg-success text-light">
+                        <h5 class="modal-title">Agregar Usuario</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" name="nombre" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Correo</label>
+                            <input type="email" name="correo" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Contraseña</label>
+                            <input type="password" name="password" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Rol</label>
+                            <select name="rol" class="form-select" required>
+                                <option value="Admin">Admin</option>
+                                <option value="Usuario">Usuario</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Guardar</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
