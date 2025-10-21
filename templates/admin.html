@@ -1,55 +1,69 @@
-{% extends 'badmin.htm' %}
-{% block title %} Panel de Administrador {% endblock %}
+{% extends 'badmin.html' %}
+{% block title %} Panel de Administrador{% endblock %}
 
 {% block body %}
 
-<div class="container mt-4">
+<div class="container p-5 mt-3">
+    <h2 class="text-center alert alert-danger py-4">Sistema de Gestión de Aves</h2>
 
-  <h3 class="text-center mb-4 fw-bold" style="color:#4a4a4a;">
-    Sistema de Gestión de Usuarios
-  </h3>
-
-  <div class="row text-center">
-  
-<!-- SECCIÓN: Gestión de Usuarios -->
-<section class="container my-5">
-  
-
-  <div class="row text-center">
-    <!-- Perfil del Usuario -->
-    <div class="col-md-4 mb-4">
-      <div class="card h-100 bg-info text-white shadow">
-        <div class="card-body">
-          <h5 class="card-title">👤 Perfil del Usuario</h5>
-          <p class="card-text">Gestiona los datos de los usuarios.</p>
-          <a href="{{ url_for('perfil') }}" class="btn btn-light">Ver Detalles</a>
+    <div class="row text-center">
+        <!-- Perfil de registro de usuario -->
+        <div class="col-md-4 mb-3">
+            <div class="card" style="background: linear-gradient(180deg, #355e3b, #7a9f7a, #f1eeda);">
+                <div class="row g-0">
+                    <div class="col-md-8">
+                        <div class="card-body text-white">
+                            <h5 class="card-title">Lista de usuarios</h5>
+                            <a href="{{ url_for('listarUsuario')}}" class="btn btn-outline-success">Ver Detalles</a>
+                        </div>
+                    </div>
+                    <div class="col-md-4 align-content-center">
+                        <img src="{{ url_for('static', filename='img/person.png') }}" class="img-fluid rounded-start"
+                            alt="Registro de usuarios">
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <!-- Registrar usuarios-->
+        <div class="col-md-4 mb-3">
+            <div class="card" style="background: linear-gradient(180deg, #042bf1,#367cd9,#ffffff);">
+                <div class="row g-0">
+                    <div class="col-md-8">
+                        <div class="card-body text-white">
+                            <h5 class="card-title">Registro de usuarios</h5>
+                            <a href="{{ url_for('listar_agregados') }}" class="btn btn-outline-success">Ver Detalles</a>
+                        </div>
+                    </div>
+                    <div class="col-md-4 align-content-center">
+                        <a href="{{ url_for('registro') }}">
+                            <img src="{{ url_for('static', filename='img/usuario.jpg') }}"
+                                class="img-fluid rounded-start" alt="Registrar Personas">
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de aves mas vistas -->
+        <div class="col-md-4 mb-3">
+            <div class="card" style="background: linear-gradient(180deg, #0b235c,#3d85a9,#e0f7ff);">
+                <div class="row g-0">
+                    <div class="col-md-8">
+                        <div class="card-body text-white">
+                            <h5 class="card-title">Lista de aves</h5>
+                            <a href="{{ url_for('listaregistro') }}" class="btn btn-outline-success">Ver Detalles</a>
+                        </div>
+                    </div>
+                    <div class="col-md-4 align-content-center">
+                        <img src="{{ url_for('static', filename='img/ave.png') }}" class="img-fluid rounded-start"
+                            alt="aves">
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Registrar Usuario -->
-    <div class="col-md-4 mb-4">
-      <div class="card h-100 bg-primary text-white shadow">
-        <div class="card-body">
-          <h5 class="card-title">➕ Registrar Usuarios</h5>
-          <p class="card-text">Agrega nuevos usuarios al sistema.</p>
-          <a href="{{ url_for('registrar') }}" class="btn btn-light">Ver Detalles</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Visualizar Usuarios -->
-    <div class="col-md-4 mb-4">
-      <div class="card h-100 text-white shadow" style="background: linear-gradient(to bottom, #a97cf7, #4b1db3);">
-        <div class="card-body">
-          <h5 class="card-title">💻 Visualizar Usuarios</h5>
-          <p class="card-text">Consulta la lista y estadísticas de usuarios.</p>
-          <a href="{{ url_for('visualizar') }}" class="btn btn-light">Ver Detalles</a>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+</div>
 
 {% endblock %}
-
