@@ -1,19 +1,24 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-from flask_mysqldb import MySQL
-from pprint import pprint   
+import mysql.connector
+from pprint import pprint
+from werkzeug.security import generate_password_hash
+from passlib.hash import pbkdf2_sha256
 
 app = Flask(__name__)
-app.secret_key = 'appsecretkey'  # Clave para sesiones
+app.secret_key = 'appsecretkey'
 
-# Configuración de MySQL
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_PORT'] = 3306
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = '1234'
-app.config['MYSQL_DB'] = 'informacion1'
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+# Database configuration
+db_config = {
+    'host': 'bnkjqfasakrmkj3plnxy-mysql.services.clever-cloud.com',
+    'port': 3306,
+    'user': 'up315axc2il16igk',
+    'password': 'GV2iKi0QPHqJnK6opHxs',
+    'database': 'bnkjqfasakrmkj3plnxy'
+}
 
-mysql = MySQL(app)
+def get_db_connection():
+    conn = mysql.connector.connect(**db_config)
+    return conn
 
 # Ruta principal
 @app.route('/')
@@ -26,20 +31,26 @@ def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        cursor = mysql.connection.cursor()
-        cursor.execute("SELECT * FROM usuario WHERE email = %s AND password = %s", (email, password))
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM usuario WHERE email = %s", (email,))
         user = cursor.fetchone()
         cursor.close()
+        conn.close()
+
         if user:
-            session['logueado'] = True
-            session['id'] = user['id']
-            session['id_rol'] = user['id_rol']
-            if user['id_rol'] == 1:
-                return render_template('admin.html')
-            else:
-                return render_template('usuario.html')
-        else:
-            return render_template('login.html', error='Usuario o contraseña incorrectos')
+            if pbkdf2_sha256.verify(password, user['password']):
+                session['logueado'] = True
+                session['id'] = user['id']
+                session['id_rol'] = user['id_rol']
+                if user['id_rol'] == 1:
+                    return render_template('admin.html')
+                else:
+                    return render_template('usuario.html')
+        
+        return render_template('login.html', error='Usuario o contraseña incorrectos')
+
     return render_template('login.html')
 
 # LOGOUT
@@ -55,33 +66,39 @@ def listarUsuario():
         email = request.form.get('email')
         password = request.form.get('password')
 
-        cursor = mysql.connection.cursor()
+        conn = get_db_connection()
+        cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO usuario (nombre, email, password, id_rol) VALUES (%s, %s, %s, '2')",
             (nombre, email, password)
         )
-        mysql.connection.commit()
+        conn.commit()
         cursor.close()
+        conn.close()
 
         return redirect(url_for('listarUsuario'))
 
     # GET: mostrar lista de usuarios
-    cursor = mysql.connection.cursor()
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT id, nombre, email, password FROM usuario ORDER BY id ASC")
     listarUsuarios = cursor.fetchall()
     cursor.close()
+    conn.close()
 
     return render_template('listarUsuario.html', usuarios=listarUsuarios)
 
 @app.route('/eliminar/<int:id>', methods=['DELETE'])
 def eliminar(id):
-    cursor = mysql.connection.cursor()
+    conn = get_db_connection()
+    cursor = conn.cursor()
     cursor.execute("DELETE FROM usuario WHERE id = %s", (id,))
-    mysql.connection.commit()
+    conn.commit()
     cursor.close()
+    conn.close()
     return jsonify({'success': True, 'message': 'Usuario eliminado correctamente'})
 
-@app.route('/updateUsuario', methods=['POST'])
+@app.route('/updateUsuario', methods=['POST']) # actualizar and guardar, agregar
 def updateUsuario():
     try:
         id = request.form['id']
@@ -89,28 +106,24 @@ def updateUsuario():
         email = request.form['email']
         password = request.form['password']
 
-        cursor = mysql.connection.cursor()
+        conn = get_db_connection()
+        cursor = conn.cursor()
         cursor.execute(
             "UPDATE usuario SET nombre = %s, email = %s, password = %s WHERE id = %s",
             (nombre, email, password, id)
         )
-        mysql.connection.commit()
+        conn.commit()
         cursor.close()
+        conn.close()
 
-        return jsonify({
-            'success': True,
-            'message': 'Usuario actualizado correctamente'
-        })
+        return jsonify({'success': True, 'message': 'Usuario actualizado correctamente'})
 
     except Exception as e:
         print("Error al actualizar:", e)
 
-        return jsonify({
-            'success': False,
-            'message': 'Error interno al actualizar'
-        })
+        return jsonify({'success': False, 'message': 'Error interno al actualizar'})
 
-#/////////////////////////////////
+#/////////////////////////////////guardar
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
     if request.method == 'POST':
@@ -122,20 +135,24 @@ def registro():
             flash("Todos los campos son obligatorios")
             return redirect(url_for('registro'))
 
-        cursor = mysql.connection.cursor()
+        conn = get_db_connection()
+        cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO personas (nombre, email, contraseña) VALUES (%s, %s, %s)",
-            (nombre, email, contraseña)
+            (nombre, email, tipo)
         )
-        mysql.connection.commit()
+        conn.commit()
         cursor.close()
+        conn.close()
         return redirect(url_for('registro'))
 
     # Mostrar lista de registros
-    cursor = mysql.connection.cursor()
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT id_personas, nombre, email, contraseña FROM personas ORDER BY id_personas ASC")
     listarUsuarios = cursor.fetchall()
     cursor.close()
+    conn.close()
 
     return render_template('registro.html', usuarios=listarUsuarios)
 
@@ -145,11 +162,19 @@ def crearusuario():
     nombre = request.form['nombre']
     email = request.form['email']
     password = request.form['password']
-    cursor = mysql.connection.cursor()
-    cursor.execute("INSERT INTO usuario (nombre, email, password, id_rol) VALUES (%s, %s, %s, '2')",
-                   (nombre, email, password))
-    mysql.connection.commit()
+    
+    # Encriptar la contraseña antes de guardar
+    hash_password = pbkdf2_sha256.hash(password)
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO usuario (nombre, email, password, id_rol) VALUES (%s, %s, %s, '2')",
+        (nombre, email, hash_password)
+    )
+    conn.commit()
     cursor.close()
+    conn.close()
     return redirect(url_for('login'))
 
 # PÁGINAS DE INFORMACIÓN
@@ -161,9 +186,32 @@ def about():
 def contacto():
     return render_template('contacto.html')
 
+
+# RUTA ADMIN – panel con números
 @app.route('/admin')
 def admin():
-    return render_template('admin.html')
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Contar usuarios
+    cursor.execute("SELECT COUNT(*) AS total FROM usuario")
+    total_usuario = cursor.fetchone()['total']
+
+    # Contar personas registradas
+    cursor.execute("SELECT COUNT(*) AS total FROM datos")
+    total_datos = cursor.fetchone()['total']
+
+    # Contar aves / adoptantes
+    cursor.execute("SELECT COUNT(*) AS total FROM vista")
+    total_vista = cursor.fetchone()['total']
+
+    cursor.close()
+    conn.close()
+
+    return render_template('admin.html',
+                           total_usuarios=total_usuario,
+                           total_personas=total_vista,
+                           total_vista=total_datos)
 
 @app.route('/listarusuario')
 def listaregistro():
@@ -172,19 +220,23 @@ def listaregistro():
 # Lista  formulario-------o
 @app.route('/listar_agregados')
 def listar_agregados():
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM vista")
-    datos = cur.fetchall()
-    cur.close()
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM vista")
+    datos = cursor.fetchall()
+    cursor.close()
+    conn.close()
     return render_template('listar_agregados.html', datos=datos)
 
 # Listar informacion con tabla (solo lista)
 @app.route('/listar_informacion')
 def listar_informacion():
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM vista")
-    datos = cur.fetchall()
-    cur.close()
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM vista")
+    datos = cursor.fetchall()
+    cursor.close()
+    conn.close()
     return render_template('listar_informacion.html', datos=datos)
 
 # Agregar 
@@ -193,13 +245,16 @@ def agregar_datos():
     nombre = request.form['nombre']
     correo = request.form['correo']
     descripcion = request.form['descripcion']
-    cur = mysql.connection.cursor()
-    cur.execute(
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
         "INSERT INTO vista (nombre, correo, descripcion) VALUES (%s, %s, %s)",
         (nombre, correo, descripcion)
     )
-    mysql.connection.commit()
-    cur.close()
+    conn.commit()
+    cursor.close()
+    conn.close()
     flash("agregado correctamente", "success")
     return redirect(url_for('listar_agregados'))
 
@@ -210,28 +265,32 @@ def editar_datos():
     nombre = request.form['nombre']
     correo = request.form['correo']
     descripcion = request.form['descripcion']
+    fecha = request.form['fecha']
 
-    cur = mysql.connection.cursor()
-    cur.execute("""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
         UPDATE datos
         SET nombre=%s, correo=%s, descripcion=%s
         WHERE id=%s
     """, (nombre, correo, descripcion, id))
-    mysql.connection.commit()
-    cur.close()
+    conn.commit()
+    cursor.close()
+    conn.close()
     flash("actualizado correctamente", "success")
     return redirect(url_for('listar_informacion'))
 
 # Eliminar
-
 @app.route('/eliminar_datos/<int:id>')
 def eliminar_datos(id):
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM datos WHERE id = %s", (id,))
-    mysql.connection.commit()
-    cur.close()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM datos WHERE id = %s", (id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
     flash("Eliminado correctamente", "success")
     return redirect(url_for('listar_informacion'))
-
+    
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
